@@ -24,7 +24,7 @@ router.post(
 );
 router.post("/login", verifySchema(LoginSchema), login);
 router
-  .get("/verifyOTP", verifyOtp)
+  .post("/verifyOTP", verifyOtp)
   .post("/request", verifySchema(requestSchema), forgotPasswordRequest)
   .post("/reset", verifySchema(resetSchema), forgotPassword);
 

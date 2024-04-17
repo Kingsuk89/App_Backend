@@ -2,6 +2,7 @@ import "dotenv/config";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { nanoid } from "nanoid";
+import mongoose from "mongoose";
 
 import User from "../model/user.model.js";
 import Subscription from "../model/payment.modal.js";
@@ -9,6 +10,9 @@ import Subscription from "../model/payment.modal.js";
 export const payment = async (req, res) => {
   try {
     const id = req.user;
+
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(404).send(`No post with id: ${id}`);
 
     // validate user and find
     const user = await User.findById(id);
@@ -77,6 +81,39 @@ export const paymentCapture = async (req, res) => {
         .json({ order_id: order_id, message: "user successfully parched" });
     }
     res.status(400).json({ message: "Some thing wrong" });
+  } catch (error) {
+    console.log("Error: " + error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const SubscriptionUpdate = async (req, res) => {
+  try {
+    const { order_id, status } = req.body;
+
+    const paymentHistory = await Subscription.findOne(order_id);
+    if (!paymentHistory) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    await Subscription.findOneAndUpdate(order_id, status, { new: true });
+    res.status(200).json({ message: "success" });
+  } catch (error) {
+    console.log("Error: " + error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getPayment = async (req, res) => {
+  try {
+    const id = req.user;
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(404).send(`No post with id: ${id}`);
+
+    const paymentHistory = await Subscription.find({ user: id }).populate('user');
+    if (!payment) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+    res.status(200).json(paymentHistory)
   } catch (error) {
     console.log("Error: " + error);
     res.status(500).json({ message: "Internal server error" });
