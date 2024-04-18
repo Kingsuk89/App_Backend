@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import User from "../model/user.model.js";
 
 export const getUser = async (req, res) => {
@@ -6,6 +7,7 @@ export const getUser = async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(404).send(`No post with id: ${id}`);
+
     const user = await User.findOne({ _id: id });
     if (!user) {
       return res.status(404).json({ message: "Please register first" });

@@ -10,6 +10,7 @@ import paymentRoute from "./route/payment.route.js";
 import { authVerify } from "./middleware/Authmid.js";
 import userRoute from "./route/user.route.js";
 import connectDB from "./db/connectDB.js";
+import inQueryRoute from "./route/inQuery.route.js";
 
 const app = express();
 
@@ -19,8 +20,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(bodyParser.json({ limit: "30mb", extended: true }));
-app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
+app.use(bodyParser.json({ limit: "30mb", extended: false }));
+app.use(bodyParser.urlencoded({ limit: "30mb", extended: false }));
 app.use("/uploads", express.static("uploads"));
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use("/book", authVerify, bookRoute);
 app.use("/auth", authRoute);
 app.use("/payment", paymentRoute);
 app.use("/user", authVerify, userRoute);
+app.use("/in_query");
 
 morgan("dev");
 

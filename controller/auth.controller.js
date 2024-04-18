@@ -8,10 +8,8 @@ import mongoose from "mongoose";
 export const signup = async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
-
     // convert to lowercase
     const LowEmail = email.toLowerCase();
-
     // find  exist or not
     const user = await User.findOne({ email: LowEmail });
     if (user) {
@@ -102,8 +100,8 @@ export const login = async (req, res) => {
 /*  Verify otp function start */
 export const verifyOtp = async (req, res) => {
   try {
-    const { code, id } = req.query;
-
+    const { id } = req.query;
+    const { code } = req.body;
     // find user and valid
 
     if (!mongoose.Types.ObjectId.isValid(id))
@@ -178,30 +176,23 @@ export const forgotPasswordRequest = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { authCode, password } = req.body;
-    const { email } = req.query;
-
-    // convert to lowercase
-    const LowEmail = email.toLowerCase();
 
     // find user and valid
-    const user = await User.findOne({ email: LowEmail });
+    const user = await User.findOne({ authCode });
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
 
-    if (user.authCode == authCode) {
-      // hashing password
-      const hashPassword = await bcryptjs.hash(password, 10);
+    // hashing password
+    const hashPassword = await bcryptjs.hash(password, 10);
 
-      // update password
-      await User.findOneAndUpdate(
-        { email: LowEmail },
-        { authCode: null, password: hashPassword },
-        { new: true }
-      );
-      return res.status(200).json({ message: "Password reset successfully" });
-    }
-    res.status(400).json({ message: "User not found" });
+    // update password
+    await User.findOneAndUpdate(
+      { authCode },
+      { authCode: null, password: hashPassword },
+      { new: true }
+    );
+    return res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     console.log("Error: " + error.message);
     res.status(500).json({ message: "Internal server error" });

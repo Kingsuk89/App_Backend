@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 export const authVerify = (req, res, next) => {
   try {
     const token = req.header("X-Auth-Token");
+
     if (!token) {
       return res.status(400).json("User invalid credentials");
     }
