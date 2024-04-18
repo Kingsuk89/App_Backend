@@ -36,7 +36,7 @@ app.use("/book", authVerify, bookRoute);
 app.use("/auth", authRoute);
 app.use("/payment", paymentRoute);
 app.use("/user", authVerify, userRoute);
-app.use("/in_query");
+app.use("/in_query", inQueryRoute);
 
 morgan("dev");
 
