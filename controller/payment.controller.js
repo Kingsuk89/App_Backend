@@ -3,6 +3,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { nanoid } from "nanoid";
 import mongoose from "mongoose";
+import moment from "moment";
 
 import User from "../model/user.model.js";
 import Subscription from "../model/payment.modal.js";
@@ -36,12 +37,6 @@ export const payment = async (req, res) => {
 
     await instance.orders.create(options, async (err, order) => {
       if (order) {
-        await Subscription.create({
-          user: id,
-          order_id: order.id,
-          charging_amount: order.amount,
-          status: order.status,
-        });
         return res.status(200).json({
           order_id: order.id,
           currency: order.currency,
@@ -49,7 +44,7 @@ export const payment = async (req, res) => {
         });
       }
       console.log(err);
-      res.status(400).json(err);
+      return res.status(400).json(err);
     });
   } catch (error) {
     console.log("Error: " + error);
@@ -59,26 +54,35 @@ export const payment = async (req, res) => {
 
 export const paymentCapture = async (req, res) => {
   try {
-    // crate hash crypto graph for validation
     const data = crypto.createHmac("sha256", process.env.WEBHOOK_SECRETC);
     data.update(JSON.stringify(req.body));
     const digest = data.digest("hex");
 
     if (digest === req.headers["x-razorpay-signature"]) {
-      // update payment details
-      const order_id = req.body.payload.payment.entity.order_id;
-      const status = req.body.payload.payment.entity.status;
-      const subStartDate = new Date(Date.now());
-      const subEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      const nextSubDate = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
-      await Subscription.findOneAndUpdate(
-        { order_id },
-        { status, subStartDate, subEndDate, nextSubDate },
-        { new: true }
-      );
-      return res
-        .status(200)
-        .json({ order_id: order_id, message: "user successfully parched" });
+      const { order_id, email, amount, status } =
+        req.body.payload.payment.entity;
+
+      const user = await User.findOne({ email });
+      const lastSub = await Subscription.findOne({ user: user._id }).sort({
+        order_id: -1,
+      });
+
+      if (lastSub) {
+        await Subscription.updateOne(
+          { order_id: lastSub.order_id },
+          { $set: { status: "expire" } }
+        );
+      }
+      await Subscription.create({
+        user: user._id,
+        order_id,
+        charging_amount: amount,
+        status,
+        start_at: new Date(Date.now()).toISOString(),
+        end_at: moment().add(30, "days").toISOString(),
+        next_at: moment().add(31, "days").toISOString(),
+      });
+      return res.status(200).json({ message: "user successfully parched" });
     }
     res.status(400).json({ message: "Some thing wrong" });
   } catch (error) {
@@ -89,13 +93,28 @@ export const paymentCapture = async (req, res) => {
 
 export const SubscriptionUpdate = async (req, res) => {
   try {
-    const { order_id, status } = req.body;
+    const id = req.user;
 
-    const paymentHistory = await Subscription.findOne(order_id);
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(404).send(`No post with id: ${id}`);
+
+    // validate user and find
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(400).json({ message: "wrong credentials" });
+    }
+    const { order_id, plan_status } = req.body;
+    console.log(order_id);
+
+    const paymentHistory = await Subscription.findOne({ order_id });
     if (!paymentHistory) {
       return res.status(400).json({ message: "Invalid request" });
     }
-    await Subscription.findOneAndUpdate(order_id, status, { new: true });
+    await Subscription.findOneAndUpdate(
+      { order_id },
+      { plan_status },
+      { new: true }
+    );
     res.status(200).json({ message: "success" });
   } catch (error) {
     console.log("Error: " + error);
@@ -109,11 +128,13 @@ export const getPayment = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(404).send(`No post with id: ${id}`);
 
-    const paymentHistory = await Subscription.find({ user: id }).populate('user');
-    if (!payment) {
+    const paymentHistory = await Subscription.find({ user: id }).populate([
+      { path: "user", select: "email fullName" },
+    ]);
+    if (!paymentHistory) {
       return res.status(400).json({ message: "Invalid request" });
     }
-    res.status(200).json(paymentHistory)
+    res.status(200).json(paymentHistory);
   } catch (error) {
     console.log("Error: " + error);
     res.status(500).json({ message: "Internal server error" });
