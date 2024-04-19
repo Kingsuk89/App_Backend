@@ -23,6 +23,7 @@ const userSchema = mongoose.Schema({
   },
   authCode: {
     type: Number,
+    unique: true,
   },
   isVerified: {
     type: Boolean,

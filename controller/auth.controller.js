@@ -67,7 +67,6 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     // convert to lowercase
     const LowEmail = email.toLowerCase();
 
@@ -100,21 +99,19 @@ export const login = async (req, res) => {
 /*  Verify otp function start */
 export const verifyOtp = async (req, res) => {
   try {
-    const { id } = req.query;
+    const { email } = req.query;
     const { code } = req.body;
-    // find user and valid
 
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return res.status(404).send(`No post with id: ${id}`);
+    const LowEmail = email.toLowerCase();
 
-    const user = await User.findOne({ _id: id });
+    const user = await User.findOne({ email: LowEmail });
     if (!user) {
-      res.status(400).json("user not found");
-      return;
+      return res.status(400).json("user not found");
     }
+
     if (user.authCode == code) {
       await User.findOneAndUpdate(
-        { _id: id },
+        { email: LowEmail },
         { isVerified: true, authCode: "" },
         { new: true }
       );
