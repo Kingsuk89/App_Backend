@@ -1,4 +1,4 @@
-import InQuery from "../model/inquery.modal.js";
+import InQuery from "../model/inQuery.modal.js";
 
 export const postInQuery = async (req, res) => {
   try {
