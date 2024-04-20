@@ -110,14 +110,19 @@ export const verifyOtp = async (req, res) => {
     }
 
     if (user.authCode == code) {
-      await User.findOneAndUpdate(
+      const updatedUser = await User.findOneAndUpdate(
         { email: LowEmail },
-        { isVerified: true, authCode: "" },
+        { isVerified: true, authCode: null },
         { new: true }
       );
-      return res.status(200).json({ message: "user verified" });
+      if (updatedUser) {
+        return res.status(200).json({ message: "user verified" });
+      } else {
+        return res.status(400).json({ message: "user not found" });
+      }
+    } else {
+      return res.status(400).json({ message: "invalid authCode" });
     }
-    res.status(400).json({ message: "user not verified" });
   } catch (error) {
     console.log("Error: " + error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -161,7 +166,9 @@ export const forgotPasswordRequest = async (req, res) => {
       { authCode: otp },
       { new: true }
     );
-    res.status(200).json({ message: "please check your mail" });
+    res
+      .status(200)
+      .json({ email: user.email, message: "please check your mail" });
   } catch (error) {
     console.log("Error: " + error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -172,24 +179,30 @@ export const forgotPasswordRequest = async (req, res) => {
 /* reset password*/
 export const forgotPassword = async (req, res) => {
   try {
-    const { authCode, password } = req.body;
+    const { email } = req.query;
 
+    const { authCode, password } = req.body;
+    const LowEmail = email.toLowerCase();
     // find user and valid
-    const user = await User.findOne({ authCode });
+    const user = await User.findOne({ email: LowEmail });
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
 
     // hashing password
-    const hashPassword = await bcryptjs.hash(password, 10);
 
-    // update password
-    await User.findOneAndUpdate(
-      { authCode },
-      { authCode: null, password: hashPassword },
-      { new: true }
-    );
-    return res.status(200).json({ message: "Password reset successfully" });
+    if (user.authCode == authCode) {
+      const hashPassword = await bcryptjs.hash(password, 10);
+
+      // update password
+      await User.findOneAndUpdate(
+        { email: LowEmail },
+        { authCode: null, password: hashPassword },
+        { new: true }
+      );
+      return res.status(200).json({ message: "Password reset successfully" });
+    }
+    res.status(400).json({ message: "not changed" });
   } catch (error) {
     console.log("Error: " + error.message);
     res.status(500).json({ message: "Internal server error" });

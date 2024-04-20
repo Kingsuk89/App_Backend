@@ -1,25 +1,21 @@
-import axios from "axios";
+import { getJson } from "serpapi";
 
-export const review = async () => {
+export const review = async (req, res) => {
   try {
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${process.env.PLACE_ID}&key=${process.env.GOOGLE_API_KEY}`;
-    await axios(url, {
-      method: "GET",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods":
-          "GET, POST, PATCH, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers":
-          "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
+    getJson(
+      {
+        engine: "google_maps_reviews",
+        api_key:
+          "65ca78a66b5bab3ccec8ff92fa4592ddd5658bf2ce56a58758eb8b838f372701",
       },
-    }).then((res) => {
-      const data = res.data;
-      console.log(data);
-    });
+      (json) => {
+        console.log(json);
+        console.log(json["reviews"]);
+        res.status(200).json(json["reviews"]);
+      }
+    );
   } catch (e) {
     console.log(e);
+    res.status(500).json({ message: "Internal server issue" });
   }
 };
