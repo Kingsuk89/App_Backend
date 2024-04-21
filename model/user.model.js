@@ -15,18 +15,14 @@ const userSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  subscriptions: {
-    id: { type: String },
-    status: { type: String },
-    subStartDate: { type: Date },
-    subEndDate: { type: Date },
-  },
+
   authCode: {
     type: Number,
   },
   isVerified: {
     type: Boolean,
   },
+  role: { type: String, required: true, default: "user" },
 });
 const User = mongoose.model("User", userSchema);
 export default User;

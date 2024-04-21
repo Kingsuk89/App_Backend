@@ -19,6 +19,7 @@ export const getUser = async (req, res) => {
       email: user.email,
       isVerified: user.isVerified,
       avatar: user.avatar,
+      role: user.role,
     };
     res.status(200).json(resData);
   } catch (error) {
