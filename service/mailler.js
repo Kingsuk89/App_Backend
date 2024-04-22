@@ -10,6 +10,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL,
     pass: process.env.PASSWORD,
   },
+  from: process.env.EMAIL,
 });
 
 export async function SendMail({ otp, userEmail, name, condition, subject }) {
